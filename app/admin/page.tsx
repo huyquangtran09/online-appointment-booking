@@ -14,7 +14,7 @@ import { useAuth } from "@/contexts/auth-context"
 import { useAppointments } from "@/contexts/appointments-context"
 import { useToast } from "@/hooks/use-toast"
 import type { AppointmentStatus } from "@/lib/types"
-import { Calendar, Clock, CheckCircle2, XCircle, Search, MoreHorizontal, BarChart3 } from "lucide-react"
+import { Calendar, Clock, CheckCircle2, XCircle, Search, MoreHorizontal, BarChart3, RefreshCw } from "lucide-react"
 import { format } from "date-fns"
 
 const statusConfig: Record<AppointmentStatus, { label: string; color: string }> = {
@@ -26,7 +26,13 @@ const statusConfig: Record<AppointmentStatus, { label: string; color: string }> 
 
 export default function AdminPage() {
   const { user, isLoading: authLoading } = useAuth()
-  const { appointments, updateAppointmentStatus, getStatistics, isLoading: appointmentsLoading } = useAppointments()
+  const {
+    appointments,
+    updateAppointmentStatus,
+    getStatistics,
+    isLoading: appointmentsLoading,
+    resetToMockData,
+  } = useAppointments()
   const router = useRouter()
   const { toast } = useToast()
 
@@ -34,7 +40,6 @@ export default function AdminPage() {
   const [statusFilter, setStatusFilter] = useState<string>("all")
   const [dateFilter, setDateFilter] = useState<string>("all")
 
-  // Redirect if not admin
   useEffect(() => {
     if (!authLoading && (!user || user.role !== "admin")) {
       router.push("/login")
@@ -43,11 +48,9 @@ export default function AdminPage() {
 
   const stats = getStatistics()
 
-  // Filter appointments
   const filteredAppointments = useMemo(() => {
     return appointments
       .filter((apt) => {
-        // Search filter
         const matchesSearch =
           searchQuery === "" ||
           apt.citizenName.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -55,10 +58,8 @@ export default function AdminPage() {
           apt.agencyName.toLowerCase().includes(searchQuery.toLowerCase()) ||
           apt.qrCode.toLowerCase().includes(searchQuery.toLowerCase())
 
-        // Status filter
         const matchesStatus = statusFilter === "all" || apt.status === statusFilter
 
-        // Date filter
         const today = new Date()
         today.setHours(0, 0, 0, 0)
         const aptDate = new Date(apt.date)
@@ -94,6 +95,14 @@ export default function AdminPage() {
     }
   }
 
+  const handleResetData = () => {
+    resetToMockData()
+    toast({
+      title: "Đã reset dữ liệu",
+      description: "Dữ liệu demo đã được tải lại với 12 lịch hẹn từ 5 người dùng khác nhau",
+    })
+  }
+
   if (authLoading || appointmentsLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
@@ -115,13 +124,17 @@ export default function AdminPage() {
 
       <main className="flex-1 py-8">
         <div className="container mx-auto px-4">
-          {/* Header */}
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold">Bảng điều khiển quản trị</h1>
-            <p className="mt-1 text-muted-foreground">Quản lý và theo dõi tất cả lịch hẹn trong hệ thống</p>
+          <div className="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+              <h1 className="text-3xl font-bold">Bảng điều khiển quản trị</h1>
+              <p className="mt-1 text-muted-foreground">Quản lý và theo dõi tất cả lịch hẹn trong hệ thống</p>
+            </div>
+            <Button variant="outline" onClick={handleResetData} className="gap-2 bg-transparent">
+              <RefreshCw className="h-4 w-4" />
+              Reset dữ liệu Demo
+            </Button>
           </div>
 
-          {/* Stats cards */}
           <div className="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
             <Card>
               <CardContent className="pt-6">
@@ -194,7 +207,6 @@ export default function AdminPage() {
             </Card>
           </div>
 
-          {/* Filters */}
           <Card className="mb-6">
             <CardContent className="pt-6">
               <div className="flex flex-col gap-4 sm:flex-row">
@@ -234,7 +246,6 @@ export default function AdminPage() {
             </CardContent>
           </Card>
 
-          {/* Appointments table */}
           <Card>
             <CardHeader>
               <CardTitle>Danh sách lịch hẹn</CardTitle>

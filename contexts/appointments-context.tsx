@@ -29,6 +29,7 @@ interface AppointmentsContextType {
   getAppointmentsByAgency: (agencyId: string) => Appointment[]
   getStatistics: () => Statistics
   getBookedSlots: (agencyId: string, date: string) => string[]
+  resetToMockData: () => void
 }
 
 const AppointmentsContext = createContext<AppointmentsContextType | undefined>(undefined)
@@ -52,6 +53,11 @@ export function AppointmentsProvider({ children }: { children: React.ReactNode }
   const saveAppointments = (newAppointments: Appointment[]) => {
     setAppointments(newAppointments)
     localStorage.setItem("appointments", JSON.stringify(newAppointments))
+  }
+
+  const resetToMockData = () => {
+    setAppointments(mockAppointments)
+    localStorage.setItem("appointments", JSON.stringify(mockAppointments))
   }
 
   const createAppointment = async (data: CreateAppointmentData): Promise<Appointment> => {
@@ -169,6 +175,7 @@ export function AppointmentsProvider({ children }: { children: React.ReactNode }
         getAppointmentsByAgency,
         getStatistics,
         getBookedSlots,
+        resetToMockData,
       }}
     >
       {children}
