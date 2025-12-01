@@ -8,17 +8,30 @@ import { Footer } from "@/components/footer"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { useAppointments } from "@/contexts/appointments-context"
+import { useAuth } from "@/contexts/auth-context"
 import type { Appointment } from "@/lib/types"
-import { CheckCircle2, Calendar, Clock, MapPin, ArrowRight } from "lucide-react"
+import { CheckCircle2, Calendar, Clock, MapPin, ArrowRight, Mail, Loader2 } from "lucide-react"
 import { format } from "date-fns"
 import { vi } from "date-fns/locale"
 import { QRCodeSVG } from "qrcode.react"
+import { EmailPreviewDialog } from "@/components/email-preview-dialog"
+import { useToast } from "@/hooks/use-toast"
 
 function BookingSuccessContent() {
   const searchParams = useSearchParams()
   const appointmentId = searchParams.get("id")
   const { appointments } = useAppointments()
+  const { user } = useAuth()
+  const { toast } = useToast()
   const [appointment, setAppointment] = useState<Appointment | null>(null)
+  const [emailSent, setEmailSent] = useState(false)
+  const [sendingEmail, setSendingEmail] = useState(false)
+  const [emailPreview, setEmailPreview] = useState<{
+    to: string
+    subject: string
+    html: string
+  } | null>(null)
+  const [showEmailPreview, setShowEmailPreview] = useState(false)
 
   useEffect(() => {
     if (appointmentId) {
@@ -28,6 +41,58 @@ function BookingSuccessContent() {
       }
     }
   }, [appointmentId, appointments])
+
+  useEffect(() => {
+    if (appointment && user && !emailSent) {
+      sendConfirmationEmail()
+    }
+  }, [appointment, user])
+
+  const sendConfirmationEmail = async () => {
+    if (!appointment || !user || sendingEmail) return
+
+    setSendingEmail(true)
+    try {
+      const response = await fetch("/api/send-email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          to: user.email,
+          appointment: {
+            citizenName: appointment.citizenName,
+            agencyName: appointment.agencyName,
+            date: format(new Date(appointment.date), "EEEE, dd/MM/yyyy", { locale: vi }),
+            timeSlot: appointment.timeSlot,
+            reason: appointment.reason,
+            qrCode: appointment.qrCode,
+          },
+        }),
+      })
+
+      const data = await response.json()
+
+      if (data.success) {
+        setEmailSent(true)
+        if (data.mock && data.preview) {
+          // Store preview for viewing
+          setEmailPreview(data.preview)
+          toast({
+            title: "Email đã được tạo (Demo)",
+            description: "Click 'Xem email' để xem nội dung email sẽ được gửi",
+          })
+        } else {
+          toast({
+            title: "Email đã được gửi",
+            description: `Thông tin lịch hẹn đã được gửi đến ${user.email}`,
+          })
+        }
+      }
+    } catch (error) {
+      console.error("Failed to send email:", error)
+    } finally {
+      setSendingEmail(false)
+    }
+  }
 
   if (!appointment) {
     return (
@@ -58,7 +123,29 @@ function BookingSuccessContent() {
             </div>
 
             <h1 className="text-2xl font-bold text-foreground">Đặt lịch thành công!</h1>
-            <p className="mt-2 text-muted-foreground">Thông tin xác nhận đã được gửi đến email của bạn</p>
+
+            <div className="mt-2 flex items-center justify-center gap-2 text-muted-foreground">
+              {sendingEmail ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <span>Đang gửi email xác nhận...</span>
+                </>
+              ) : emailSent ? (
+                <>
+                  <Mail className="h-4 w-4 text-green-600" />
+                  <span>Email xác nhận đã được gửi đến {user?.email}</span>
+                </>
+              ) : (
+                <span>Thông tin xác nhận sẽ được gửi đến email của bạn</span>
+              )}
+            </div>
+
+            {emailPreview && (
+              <Button variant="link" size="sm" className="mt-1 text-primary" onClick={() => setShowEmailPreview(true)}>
+                <Mail className="mr-1 h-4 w-4" />
+                Xem email đã gửi
+              </Button>
+            )}
 
             {/* QR Code */}
             <div className="mx-auto my-8 flex flex-col items-center">
@@ -115,6 +202,8 @@ function BookingSuccessContent() {
       </main>
 
       <Footer />
+
+      <EmailPreviewDialog open={showEmailPreview} onOpenChange={setShowEmailPreview} emailData={emailPreview} />
     </div>
   )
 }

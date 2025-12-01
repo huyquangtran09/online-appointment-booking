@@ -3,7 +3,6 @@
 import type React from "react"
 import { createContext, useContext, useState, useEffect } from "react"
 import type { User, UserRole } from "@/lib/types"
-import { mockUsers } from "@/lib/mock-data"
 
 interface AuthContextType {
   user: User | null
@@ -18,6 +17,23 @@ interface RegisterData {
   password: string
   name: string
   phone: string
+}
+
+const getRegisteredUsers = (): Array<User & { password: string }> => {
+  if (typeof window === "undefined") return []
+  const stored = localStorage.getItem("registeredUsers")
+  if (stored) {
+    try {
+      return JSON.parse(stored)
+    } catch {
+      return []
+    }
+  }
+  return []
+}
+
+const saveRegisteredUsers = (users: Array<User & { password: string }>) => {
+  localStorage.setItem("registeredUsers", JSON.stringify(users))
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -36,54 +52,69 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [])
 
   const login = async (email: string, password: string): Promise<{ success: boolean; error?: string }> => {
-    // Simulate API delay
     await new Promise((resolve) => setTimeout(resolve, 500))
 
-    // Check mock users
-    const foundUser = mockUsers.find((u) => u.email === email)
-
-    // For demo: accept any password, or create new citizen user
-    if (foundUser) {
-      setUser(foundUser)
-      localStorage.setItem("user", JSON.stringify(foundUser))
+    if (email.includes("admin")) {
+      const adminUser: User = {
+        id: `admin-${Date.now()}`,
+        email: email,
+        name: "Quản trị viên",
+        phone: "",
+        role: "admin" as UserRole,
+        createdAt: new Date(),
+      }
+      setUser(adminUser)
+      localStorage.setItem("user", JSON.stringify(adminUser))
       return { success: true }
     }
 
-    // Create new user for demo
-    const newUser: User = {
-      id: `user-${Date.now()}`,
-      email,
-      name: email.split("@")[0],
-      phone: "",
-      role: email.includes("admin") ? "admin" : "citizen",
-      createdAt: new Date(),
+    const registeredUsers = getRegisteredUsers()
+    const foundUser = registeredUsers.find((u) => u.email === email)
+
+    if (!foundUser) {
+      return { success: false, error: "Email chưa được đăng ký. Vui lòng đăng ký tài khoản mới." }
     }
 
-    setUser(newUser)
-    localStorage.setItem("user", JSON.stringify(newUser))
+    if (foundUser.password !== password) {
+      return { success: false, error: "Mật khẩu không đúng" }
+    }
+
+    // Remove password before storing in session
+    const { password: _, ...userWithoutPassword } = foundUser
+    setUser(userWithoutPassword)
+    localStorage.setItem("user", JSON.stringify(userWithoutPassword))
     return { success: true }
   }
 
   const register = async (data: RegisterData): Promise<{ success: boolean; error?: string }> => {
     await new Promise((resolve) => setTimeout(resolve, 500))
 
+    const registeredUsers = getRegisteredUsers()
+
     // Check if email exists
-    const exists = mockUsers.some((u) => u.email === data.email)
+    const exists = registeredUsers.some((u) => u.email === data.email)
     if (exists) {
       return { success: false, error: "Email đã được sử dụng" }
     }
 
-    const newUser: User = {
+    const newUser: User & { password: string } = {
       id: `user-${Date.now()}`,
       email: data.email,
       name: data.name,
       phone: data.phone,
-      role: "citizen" as UserRole,
+      role: data.email.includes("admin") ? "admin" : ("citizen" as UserRole),
+      password: data.password,
       createdAt: new Date(),
     }
 
-    setUser(newUser)
-    localStorage.setItem("user", JSON.stringify(newUser))
+    // Save to registered users list
+    registeredUsers.push(newUser)
+    saveRegisteredUsers(registeredUsers)
+
+    // Remove password before storing in session
+    const { password: _, ...userWithoutPassword } = newUser
+    setUser(userWithoutPassword)
+    localStorage.setItem("user", JSON.stringify(userWithoutPassword))
     return { success: true }
   }
 

@@ -98,8 +98,8 @@ export default function AdminPage() {
   const handleResetData = () => {
     resetToMockData()
     toast({
-      title: "Đã reset dữ liệu",
-      description: "Dữ liệu demo đã được tải lại với 12 lịch hẹn từ 5 người dùng khác nhau",
+      title: "Đã làm mới danh sách",
+      description: "Danh sách lịch hẹn đã được tải lại",
     })
   }
 
@@ -129,9 +129,10 @@ export default function AdminPage() {
               <h1 className="text-3xl font-bold">Bảng điều khiển quản trị</h1>
               <p className="mt-1 text-muted-foreground">Quản lý và theo dõi tất cả lịch hẹn trong hệ thống</p>
             </div>
+            {/* CHANGE: Đổi text nút thành "Reset" */}
             <Button variant="outline" onClick={handleResetData} className="gap-2 bg-transparent">
               <RefreshCw className="h-4 w-4" />
-              Reset dữ liệu Demo
+              Reset
             </Button>
           </div>
 

@@ -3,7 +3,7 @@
 import type React from "react"
 import { createContext, useContext, useState, useEffect } from "react"
 import type { Appointment, AppointmentStatus, Statistics } from "@/lib/types"
-import { mockAppointments, generateQRCode } from "@/lib/mock-data"
+import { generateQRCode } from "@/lib/mock-data"
 
 interface CreateAppointmentData {
   citizenId: string
@@ -38,15 +38,22 @@ export function AppointmentsProvider({ children }: { children: React.ReactNode }
   const [appointments, setAppointments] = useState<Appointment[]>([])
   const [isLoading, setIsLoading] = useState(true)
 
-  useEffect(() => {
-    // Load appointments from localStorage or use mock data
+  const loadAppointments = () => {
     const stored = localStorage.getItem("appointments")
     if (stored) {
-      setAppointments(JSON.parse(stored))
+      try {
+        const parsed = JSON.parse(stored)
+        setAppointments(parsed)
+      } catch {
+        setAppointments([])
+      }
     } else {
-      setAppointments(mockAppointments)
-      localStorage.setItem("appointments", JSON.stringify(mockAppointments))
+      setAppointments([])
     }
+  }
+
+  useEffect(() => {
+    loadAppointments()
     setIsLoading(false)
   }, [])
 
@@ -56,8 +63,7 @@ export function AppointmentsProvider({ children }: { children: React.ReactNode }
   }
 
   const resetToMockData = () => {
-    setAppointments(mockAppointments)
-    localStorage.setItem("appointments", JSON.stringify(mockAppointments))
+    loadAppointments()
   }
 
   const createAppointment = async (data: CreateAppointmentData): Promise<Appointment> => {
