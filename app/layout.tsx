@@ -12,28 +12,15 @@ const beVietnamPro = Be_Vietnam_Pro({
   weight: ["300", "400", "500", "600", "700"],
 })
 
-export const metadata: Metadata = {
+export const metadata = {
   title: "Đặt lịch hẹn trực tuyến - Dịch vụ công",
-  description: "Hệ thống đặt lịch hẹn trực tuyến với các cơ quan hành chính. Tiết kiệm thời gian, giảm chờ đợi.",
-  generator: "v0.app",
+  description: "Hệ thống đặt lịch hẹn trực tuyến với các cơ quan hành chính.",
   icons: {
-    icon: [
-      {
-        url: "/icon.svg",
-        media: "(prefers-color-scheme: light)",
-      },
-      {
-        url: "/icon.svg",
-        media: "(prefers-color-scheme: dark)",
-      },
-      {
-        url: "/icon.svg",
-        type: "image/svg+xml",
-      },
-    ],
+    icon: "/icon.png",
     apple: "/apple-icon.png",
   },
-}
+};
+
 
 export default function RootLayout({
   children,
