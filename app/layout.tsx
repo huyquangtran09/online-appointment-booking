@@ -17,7 +17,7 @@ export const metadata = {
   description: "Hệ thống đặt lịch hẹn trực tuyến với các cơ quan hành chính.",
   icons: {
     icon: "/icon.png",
-    apple: "/apple-icon.png",
+    apple: "/icon.png",
   },
 };
 
