@@ -94,11 +94,6 @@ export default function LoginPage() {
                   required
                 />
               </div>
-
-              <div className="rounded-lg bg-muted p-3 text-sm text-muted-foreground">
-                <strong>Lưu ý:</strong> Người dùng thường cần đăng ký trước khi đăng nhập. Email có chứa "admin" có thể
-                đăng nhập trực tiếp với quyền quản trị.
-              </div>
             </CardContent>
             <CardFooter className="flex flex-col gap-4">
               <Button type="submit" className="w-full" disabled={isLoading}>
